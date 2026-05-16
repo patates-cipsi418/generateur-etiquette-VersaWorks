@@ -35,6 +35,7 @@ except ImportError:
 CARD_WIDTH  = 85.60 * mm   # 85,60 mm
 CARD_HEIGHT = 53.98 * mm   # 53,98 mm
 CORNER_RADIUS = 3.18 * mm  # rayon standard ISO
+CUT_MARGIN    = 0.5 * mm     # marge autour du tracé de coupe (bleed VersaWorks)
 
 # --- Logo ---
 LOGO_PATH = "logo.svg"       # chemin du fichier SVG à incorporer
@@ -372,6 +373,11 @@ def dessiner_etiquette(c, texte, logo=None):
     page_width  = CARD_WIDTH
     page_height = CARD_HEIGHT
 
+    # Décaler tout le contenu de CUT_MARGIN pour que le tracé de coupe
+    # ne soit pas à la bordure exacte de la page (non détecté par VersaWorks).
+    c.saveState()
+    c.translate(CUT_MARGIN, CUT_MARGIN)
+
     # --- 1. Fond blanc avec coins arrondis ---
     c.setFillColor(BG_FILL)
     c.setStrokeColor(BG_FILL)
@@ -434,6 +440,8 @@ def dessiner_etiquette(c, texte, logo=None):
         stroke=1, fill=0,
     )
 
+    c.restoreState()
+
 
 def generer_pdf(chemin_txt, chemin_pdf, chemin_logo=LOGO_PATH):
     textes = lire_lignes(chemin_txt)
@@ -449,10 +457,11 @@ def generer_pdf(chemin_txt, chemin_pdf, chemin_logo=LOGO_PATH):
         # Fichier inexistant — info seulement, pas un avertissement bruyant
         pass
 
-    # Page PDF aux dimensions exactes de l'étiquette (pas de marge)
+    # Page PDF avec une marge de bleed de CUT_MARGIN sur chaque côté
+    # pour que VersaWorks détecte le tracé de coupe sur tous les bords.
     c = canvas.Canvas(
         chemin_pdf,
-        pagesize=(CARD_WIDTH, CARD_HEIGHT),
+        pagesize=(CARD_WIDTH + 2 * CUT_MARGIN, CARD_HEIGHT + 2 * CUT_MARGIN),
         pageCompression=1,
     )
 
